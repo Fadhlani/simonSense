@@ -8,7 +8,7 @@
 #define BRIGHTNESS 100 //brightness for the led array
 #define LED_PIN 9 //led pin
 
-#define PRESSURE_THRESHOLD 500 //sensor threshold
+#define PRESSURE_THRESHOLD 600 //sensor threshold
 
 int sensorPins[NUM_SENSORS] = {
   A0,
@@ -134,18 +134,16 @@ void simonSense() {
   }
   if(playerTurn) {
     //Check player inputs
-    if(testMode) {
-      Serial.print("Sensor: ");
-      Serial.print(sensor + 1);
-      Serial.print(" value: ");
-      Serial.println(sensorVal);
-      delay(100);
-    }
     for(int i = 0; i < NUM_SENSORS; i++) {
       int sensorValue = analogRead(sensorPins[i]);
+      
       if(testMode) {
         Serial.print("Sequence: ");
         Serial.print(gameSequence[i]);
+        Serial.print(" Sensor: ");
+        Serial.print(i + 1);
+        Serial.print(" value: ");
+        Serial.println(sensorValue);
         delay(100);
       }
       
