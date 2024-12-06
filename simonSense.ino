@@ -8,18 +8,35 @@
 #define BRIGHTNESS 100 //brightness for the led array
 #define LED_PIN 9 //led pin
 
-#define PRESSURE_THRESHOLD 540  //sensor threshold
+#define DEFAULT_THRESHOLD 500  //sensor threshold
 
 int sensorPins[NUM_SENSORS] = {
-  A0,
-  A1,
-  A2,
-  A3,
-  A4,
-  A5,
-  A6,
-  A7,
-  }; //sensor pins
+  A0, //sensor #1
+  A1, //sensor #2
+  A2, //sensor #3
+  A3, //sensor #4
+  A4, //sensor #5
+  A5, //sensor #6
+  A6, //sensor #7
+  A7, //sensor #8
+}; //sensor pins
+
+//define sensor thresholds in case of inconsistency with specific sensors, set to "DEFAULT_THRESHOLD" if no change necessary
+int sensorThresholds[NUM_SENSORS] = {
+  DEFAULT_THRESHOLD, //sensor #1
+  DEFAULT_THRESHOLD, //sensor #2
+  DEFAULT_THRESHOLD, //sensor #3
+  DEFAULT_THRESHOLD, //sensor #4
+  DEFAULT_THRESHOLD, //sensor #5
+  DEFAULT_THRESHOLD, //sensor #6
+  DEFAULT_THRESHOLD, //sensor #7
+  DEFAULT_THRESHOLD, //sensor #8
+};
+
+//define function that checks sensor with specific threhsold
+bool isPressed(int sensor, int sensorVal) {
+  return sensorVal > sensorThresholds[sensor];
+}
 
 //touch response variables
 bool ledStates[NUM_SENSORS] = {false}; //track led states for switch functionality
@@ -45,7 +62,7 @@ CRGB colors[NUM_SENSORS] = {
 #define MAX_GAME_LENGTH 10
 bool simonSenseMode = false;
 int gameSequence[MAX_GAME_LENGTH] = {};
-int gameLen = 2;
+int gameLen = 2; //starting game length
 int playerIndex = 0;
 bool playerTurn = false;
 bool gameActive = false;
@@ -65,11 +82,12 @@ void setup() {
 }
 
 void loop() {
-  if(analogRead(sensorPins[5]) > PRESSURE_THRESHOLD && analogRead(sensorPins[7]) > PRESSURE_THRESHOLD) {
+  //Mode Toggle logic
+  if(isPressed(5,analogRead(sensorPins[5])) && isPressed(7,analogRead(sensorPins[7]))) {
     simonSenseMode = !simonSenseMode;
     initializeSeq();
     resetStates();
-    delay(500);
+    delay(400);
   }
   
   if(simonSenseMode) {
@@ -81,7 +99,7 @@ void loop() {
     }
   }
   FastLED.show();
-  delay(50);
+  delay(25);
 
 }
 
@@ -96,57 +114,17 @@ void touchResponse(int sensor) {
     Serial.println(sensorVal);
     Serial.print("LED State: ");
     Serial.println(ledStates[sensor]);
-    delay(300);
+    delay(250);
   }
 
   //check if sensor is pressed and it wasnt pressed before
- 
-  switch(sensor) {
-    case 2: {
-      if(sensorVal > 495 && !previousStates[sensor]) {
-        ledStates[sensor] = !ledStates[sensor];
-        previousStates[sensor] = true;
-      }
-    } break;
-    case 3: {
-      if(sensorVal > 300 && !previousStates[sensor]) {
-        ledStates[sensor] = !ledStates[sensor];
-        previousStates[sensor] = true;
-      }
-    } break;
-    case 4: {
-      if(sensorVal > 650 && !previousStates[sensor]) {
-        ledStates[sensor] = !ledStates[sensor];
-        previousStates[sensor] = true;
-      }
-    }break;
-    case 7: {
-      if(sensorVal > 500 && !previousStates[sensor]) {
-        ledStates[sensor] = !ledStates[sensor];
-        previousStates[sensor] = true;
-      }
-    }break;
-    default: {
-      if(sensorVal > PRESSURE_THRESHOLD && !previousStates[sensor]) {
-        ledStates[sensor] = !ledStates[sensor];
-        previousStates[sensor] = true;
-      }
-    } break;
+  
+  if(isPressed(sensor, sensorVal) && !previousStates[sensor]) {
+    ledStates[sensor] = !ledStates[sensor];
+    previousStates[sensor] = true;
   }
-  //reset sensor state when not pressed.
-  if(sensor == 2 && sensorVal <= 495) {
-    previousStates[sensor] = false;      
-  }
-  if(sensor == 3 && sensorVal <= 300) {
-    previousStates[sensor] = false;      
-  }
-  if(sensor == 4 && sensorVal <= 650) {
-    previousStates[sensor] = false;    
-  }
-  if(sensor == 7 && sensorVal <= 500) {
-    previousStates[sensor] = false;    
-  }
-  if(sensorVal <= PRESSURE_THRESHOLD) {
+
+  if(!isPressed(sensor,sensorVal)) {
     previousStates[sensor] = false;
   }
   
@@ -177,7 +155,7 @@ void simonSense() {
     //Check player inputs
 
     for(int i = 0; i < NUM_SENSORS; i++) {
-      int sensorValue = analogRead(sensorPins[i]);
+      int sensorVal = analogRead(sensorPins[i]);
       
       if(testMode) {
         Serial.print("Sequence: ");
@@ -185,11 +163,11 @@ void simonSense() {
         Serial.print("Sensor: ");
         Serial.print(i + 1);
         Serial.print(" value: ");
-        Serial.println(sensorValue);
-        delay(100);
+        Serial.println(sensorVal);
+        delay(250);
       }
       
-      if(sensorValue > PRESSURE_THRESHOLD && !previousStates[i]) {
+      if(isPressed(i,sensorVal) && !previousStates[i]) {
         if(i == gameSequence[playerIndex]) {
           //correct input recieved, show correct input
           showColors(i, colors[i]);
@@ -221,7 +199,7 @@ void simonSense() {
         }
         previousStates[i] = true;
       }
-      if(sensorValue <= PRESSURE_THRESHOLD) {
+      if(!isPressed(i,sensorVal)) {
         previousStates[i] = false;
       }
     }
